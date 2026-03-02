@@ -53,13 +53,19 @@ async def determine_tax(
 
     # Build a Transaction from the request
     net_amount = Decimal(body.net_amount)
+
+    # Normalize jurisdiction code: "CA" -> "US-CA" if country is provided
+    buyer_jurisdiction = body.buyer_jurisdiction
+    if buyer_jurisdiction and "-" not in buyer_jurisdiction and body.buyer_country:
+        buyer_jurisdiction = f"{body.buyer_country}-{buyer_jurisdiction}"
+
     transaction = Transaction(
         transaction_type=TransactionType(body.transaction_type),
         transaction_date=datetime.fromisoformat(body.transaction_date),
         currency=body.currency,
         seller_country=body.seller_country,
         buyer_country=body.buyer_country,
-        buyer_jurisdiction=body.buyer_jurisdiction,
+        buyer_jurisdiction=buyer_jurisdiction,
         is_b2b=body.is_b2b,
         is_cross_border=body.is_cross_border,
         is_digital_service=body.is_digital_service,

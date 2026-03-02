@@ -3,15 +3,20 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncIterator
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from taxinfra.api.routes import agents, compliance, health
 from taxinfra.core.audit_trail import AuditTrail
 from taxinfra.core.explainability import DecisionLog
 from taxinfra.core.traceability import TraceChain
 from taxinfra.countries.registry import CountryRegistry
+
+STATIC_DIR = Path(__file__).resolve().parent.parent / "web" / "static"
 
 
 @asynccontextmanager
@@ -36,6 +41,14 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(agents.router, prefix="/api/v1/agents", tags=["agents"])
     app.include_router(compliance.router, prefix="/api/v1/compliance", tags=["compliance"])
+
+    # Serve the web dashboard
+    if STATIC_DIR.exists():
+        app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+        @app.get("/", include_in_schema=False)
+        async def dashboard():
+            return FileResponse(str(STATIC_DIR / "index.html"))
 
     return app
 
